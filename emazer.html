@@ -6,7 +6,77 @@
 <body onload='run()'>
 <canvas width=600 height=600 id="c"></canvas>
 
+<script type="text/javascript">
+var mazeGenerator = {
+    map    : [],
+    WIDTH  : 30,
+    HEIGHT : 30,
 
+    DIRECTIONS : {
+        'N' : { dy: -1, opposite: 'S' },
+        'S' : { dy:  1, opposite: 'N' },
+        'E' : { dx:  1, opposite: 'W' },
+        'W' : { dx: -1, opposite: 'E' }
+    },
+
+    prefill : function () {
+        for (var x = 0; x < this.WIDTH; x++) {
+            this.map[x] = [];
+            for (var y = 0; y < this.HEIGHT; y++) {
+                this.map[x][y] = {};
+            }
+        }
+    },
+
+    shuffle : function (o) {
+        for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+        return o;
+    },
+
+    carve : function (x0, y0, direction) {
+        //console.log('[%d, %d, "%s"]', x0, y0, direction);
+
+        var x1 = x0 + (this.DIRECTIONS[direction].dx || 0),
+            y1 = y0 + (this.DIRECTIONS[direction].dy || 0);
+
+        if (x1 == 0 || x1 == this.WIDTH || y1 == 0 || y1 == this.HEIGHT) {
+            return;
+        }
+
+        if ( this.map[x1][y1].seen ) {
+            return;
+        }
+
+        this.map[x0][y0][ direction ] = true;
+        this.map[x1][y1][ this.DIRECTIONS[direction].opposite ] = true;
+        this.map[x1][y1].seen = true;
+
+        var directions = this.shuffle([ 'N', 'S', 'E', 'W' ]);
+        for (var i = 0; i < directions.length; i++) {
+            this.carve(x1, y1, directions[i]);
+        }
+    },
+
+    output : function () {
+        var output = '';
+        for (var y = 0; y < this.HEIGHT; y++) {
+            for (var x = 0; x < this.WIDTH; x++) {
+                output += ( this.map[x][y].S ? ' ' : '_' );
+                output += ( this.map[x][y].E ? ' ' : '!' );
+            }
+            output += '\n';
+        }
+        output = output.replace(/_ /g, '__');
+        console.log(output);
+    }
+};
+function genMaze() {
+mazeGenerator.prefill();
+mazeGenerator.carve(mazeGenerator.WIDTH/2, mazeGenerator.HEIGHT/2, 'N');
+mazeGenerator.output();
+return mazeGenerator.map;
+}
+</script>
 
 
 <script type="text/javascript">
@@ -36,6 +106,7 @@ Number.prototype.between = function(min, max) {
     return this.valueOf() >= min && this.valueOf() <= max;
 }
 
+
 var U = 1, D = 2, R = 4, L = 8,
 DX = { 'R' : 1, 'L' : -1, 'U' :  0, 'D' : 0 },
 DY = { 'R' : 0, 'L' :  0, 'U' : -1, 'D' : 1 },
@@ -44,7 +115,7 @@ OPPOSITE = { 'R' : L, 'L' :  R, 'U' :  D, 'D' : U }
 
 function Maze() {
     //this.map = [[1,2,4,1],[1,4,2,8],[2,4,1,8],[1,4,2,8]];
-    this.map = [];
+    this.map = [];//genMaze();
     for (var r = 0; r < SIZE; r++) {
         this.map.push(new Array(SIZE));
         for (var c = 0; c < SIZE; c++)
@@ -55,36 +126,36 @@ function Maze() {
 }
 
 Maze.prototype.drawMap = function() {
-    console.log('drawing map');
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(0,0,canvas.width, canvas.height);
     for (var r = 0; r < this.map.length; r++) {
-        for (var c = 0; c < this.map[0].length; c++) {
+        for (var c = 0; c < this.map.length; c++) {
             ctx.fillStyle = 'black';
-            if (this.map[r][c] & U)
+            if (!(this.map[r][c] & U))
                 ctx.fillRect(SCALE*c, SCALE*r, SCALE, STROKEW);
-            if (this.map[r][c] & D)
-                ctx.fillRect(SCALE*c, SCALE*r + SCALE, SCALE, STROKEW);
-            if (this.map[r][c] & R)
+            if (!(this.map[r][c] & D))
+               ctx.fillRect(SCALE*c, SCALE*r + SCALE, SCALE, STROKEW);
+            if (!(this.map[r][c] & R))
                 ctx.fillRect(SCALE*c + SCALE, SCALE*r, STROKEW, SCALE);
-            if (this.map[r][c] & L)
-                ctx.fillRect(SCALE*c, SCALE*r, STROKEW, SCALE); 
+            if (!(this.map[r][c] & L))
+                ctx.fillRect(SCALE*c, SCALE*r, STROKEW, SCALE);
         }
     }
 }
 
 // credits http://weblog.jamisbuck.org/2010/12/27/maze-generation-recursive-backtracking for maze generation.
 Maze.prototype.carvePassagesFrom = function(cx, cy, grid) {
-    //console.log('stack');
     var directions = ['U', 'D', 'R', 'L'].shuffle();
     var self = this;
     directions.forEach(function(direction) {
         var nx = cx + DX[direction], ny = cy + DY[direction];
-
-        if (nx.between(0, grid.safeLength() - 1) &&
-            ny.between(0, grid[ny] ? grid[ny].safeLength() : 0 ) &&
-            grid[ny].safeLength() != 0 ? (grid[ny][nx] == 0 ) : false
+        if (nx.between(0, grid.length - 1) &&
+            ny.between(0, grid.length - 1) &&
+            grid[ny][nx] === 0 
             ) {
-            grid[cy][cx] |= eval(direction);
-            grid[ny][nx] |= OPPOSITE[direction];
+            grid[cy][cx] += eval(direction);
+            grid[ny][nx] += OPPOSITE[direction];
             self.carvePassagesFrom(nx, ny, grid);
         }
     });
@@ -125,21 +196,21 @@ Player.prototype.draw = function() {
 }
 
 Player.prototype.move = function(dir) {
-    if (dir == 'left' && this.map[this.pos.x - 1][this.pos.y] && this.map[this.pos.x - 1][this.pos.y] != 0)
+    if (dir == 'left' && typeof(this.map[this.pos.x - 1]) != 'undefined' && this.map[this.pos.x - 1][this.pos.y] & L)
         this.pos.x -= 1;
-    else if (dir == 'down' && this.map[this.pos.x][this.pos.y + 1] && this.map[this.pos.x][this.pos.y + 1] != 0)
+    else if (dir == 'down' && typeof(this.map[this.pos.x]) != 'undefined' && this.map[this.pos.x][this.pos.y + 1] & D)
         this.pos.y += 1;
-    else if (dir == 'right' && this.map[this.pos.x + 1][this.pos.y] && this.map[this.pos.x + 1][this.pos.y] != 0)
+    else if (dir == 'right' && typeof(this.map[this.pos.x + 1]) != 'undefined' && this.map[this.pos.x + 1][this.pos.y] & R)
         this.pos.x += 1;
-    else if (dir == 'up' && this.map[this.pos.x][this.pos.y - 1] && this.map[this.pos.x][this.pos.y - 1] != 0) {
+    else if (dir == 'up' && typeof(this.map[this.pos.x]) != 'undefined' && this.map[this.pos.x][this.pos.y - 1] & U) {
         this.pos.y -= 1;
     }
     ctx.clearRect(0,0, canvas.width, canvas.height);
-    drawMap();
+    m.drawMap();
     this.draw();
 }
 
-var p = new Player(0,0);
+var p = new Player(0,0,m.map);
 
 
 }
