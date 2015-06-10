@@ -5,6 +5,7 @@
 </head>
 <body onload='run()'>
 <canvas width=600 height=600 id="c"></canvas>
+<button onclick="drawImages()">draw images</button>
 
 
 <script type="text/javascript">
@@ -12,9 +13,9 @@ run = function() {
 var canvas = document.getElementById('c');
 var ctx = document.getElementById('c').getContext('2d');
 
-var SCALE = 40;
+var SCALE = 30;
 var STROKEW = 2;
-var SIZE = 30;
+var SIZE = 60;
 // credits @Cheeso on SO
 Array.prototype.shuffle = function() {
   var i = this.length, j, temp;
@@ -26,9 +27,6 @@ Array.prototype.shuffle = function() {
      this[j] = temp;
   }
   return this;
-}
-Array.prototype.safeLength = function() {
-    return typeof(this) == 'undefined' ? 0 : this.length;
 }
 Number.prototype.between = function(min, max) {
     return this.valueOf() >= min && this.valueOf() <= max;
@@ -89,7 +87,19 @@ Maze.prototype.carvePassagesFrom = function(cx, cy, grid) {
     });
 }
 
+Maze.prototype.drawImages = function() {
+    var i = 1;
+    m.images.forEach(function(image) {
+        var currImg = new Image();
+        currImg.src = "resources/img/" + String(i++) + ".jpg";
+        currImg.onload = function() {
+            ctx.drawImage(currImg, image.x * SCALE, image.y * SCALE, SCALE, SCALE);
+        }
+    })
+}
+
 var m = new Maze();
+m.images = [];
 
 document.addEventListener('keydown', function(e) {
     if (e.keyCode == 37) p.move('left');
@@ -97,6 +107,14 @@ document.addEventListener('keydown', function(e) {
     else if (e.keyCode == 39) p.move('right');
     else if (e.keyCode == 40) p.move('down');
 })
+
+document.addEventListener('mousedown', function(e) {
+    var x = e.clientX, y = e.clientY;
+    // determine cell clicked
+    var cellX = Math.floor(x/SCALE), cellY = Math.floor(y/SCALE);
+    // var test = new Player(cellX, cellY, m.map);
+    m.images.push({'x': cellX, 'y': cellY});
+});
 
 function Player(initX, initY, map) {
     this.pos = {
@@ -124,13 +142,13 @@ Player.prototype.draw = function() {
 }
 
 Player.prototype.move = function(dir) {
-    if (dir == 'left' && typeof(this.map[this.pos.x - 1]) != 'undefined' && this.map[this.pos.x - 1][this.pos.y] & L)
+    if (dir == 'left' && this.map[this.pos.y][this.pos.x] & L)
         this.pos.x -= 1;
-    else if (dir == 'down' && typeof(this.map[this.pos.x]) != 'undefined' && this.map[this.pos.x][this.pos.y + 1] & D)
+    else if (dir == 'down' && this.map[this.pos.y][this.pos.x] & D)
         this.pos.y += 1;
-    else if (dir == 'right' && typeof(this.map[this.pos.x + 1]) != 'undefined' && this.map[this.pos.x + 1][this.pos.y] & R)
+    else if (dir == 'right' && this.map[this.pos.y][this.pos.x] & R)
         this.pos.x += 1;
-    else if (dir == 'up' && typeof(this.map[this.pos.x]) != 'undefined' && this.map[this.pos.x][this.pos.y - 1] & U) {
+    else if (dir == 'up' && this.map[this.pos.y][this.pos.x] & U) {
         this.pos.y -= 1;
     }
     ctx.clearRect(0,0, canvas.width, canvas.height);
@@ -140,6 +158,9 @@ Player.prototype.move = function(dir) {
 
 var p = new Player(0,0,m.map);
 
+drawImages = function(){
+    m.drawImages();    
+}
 
 }
 </script>
