@@ -2,7 +2,7 @@
 <head>
     <title></title>
 </head>
-<body onload="setBoard();drawTiles()">
+<body onload="setBoard();">
 <canvas width=480 height=480 id="puzzle"></canvas>
 <script type="text/javascript">
 var context = document.getElementById('puzzle').getContext('2d');
@@ -20,10 +20,6 @@ var clickLoc = new Object;
 clickLoc.x = 0;
 clickLoc.y = 0;
 
-var emptyLoc = new Object;
-emptyLoc.x = 0;
-emptyLoc.y = 0;
-
 var solved = false;
 
 var boardParts;
@@ -39,10 +35,9 @@ var boardParts;
 document.getElementById('puzzle').onclick = function(e) {
   clickLoc.x = Math.floor((e.pageX - this.offsetLeft) / tileSize);
   clickLoc.y = Math.floor((e.pageY - this.offsetTop) / tileSize);
-  if (distance(clickLoc.x, clickLoc.y, emptyLoc.x, emptyLoc.y) == 1) {
-    slideTile(emptyLoc, clickLoc);
-    drawTiles();
-  }
+
+  slideTile(clickLoc.x, clickLoc.y);
+
   if (solved) {
     setTimeout(function() {alert("You solved it!");}, 500);
   }
@@ -68,69 +63,60 @@ function img2html(html) {
 img2html.prototype.draw = function(x,y) {
     this.img.onload = function () {
       context.drawImage(this.img, x, y, tileSize, tileSize);
-      this.DOMURL.revokeObjectURL(this.url);
+      //this.DOMURL.revokeObjectURL(this.url);
     }.bind(this);
-
     this.img.src = this.url;
+
 }
 
 //////////
 
-
-
+function setBoard() {
+  boardParts = [];
+  var c = 1;
+  for (var i = 0; i < tileCount; i++) {
+    boardParts.push(new Array(tileCount));
+    for (var j = 0; j < tileCount; j++) {
+      if (c != tileCount * tileCount)
+        boardParts[i][j] = new img2html('<h1>' + ++c + '</h1>');
+      else {
+        boardParts[i][j] = 1;
+      }
+    }
+  }
+  setTimeout(drawTiles(), 1000);
+}
 
 function drawTiles() {
-  context.clearRect ( 0 , 0 , boardSize , boardSize );
-  for (var i = 0; i < tileCount; ++i) {
-    for (var j = 0; j < tileCount; ++j) {
-      if(i != emptyLoc.x || j != emptyLoc.y || solved == true) {
-        boardParts[i][j].draw(i*tileSize,j*tileSize);
-      }
+  context.clearRect(0,0,boardSize,boardSize);
+  for (var i = 0; i < tileCount; i++) {
+    for (var j = 0; j < tileCount; j++) {
+      if (boardParts[i][j] != 1)
+        boardParts[i][j].draw(i * tileSize, j * tileSize);
     }
   }
 }
 
-
-function setBoard() {
-  boardParts = new Array(tileCount);
-  var c = 1;
-  for (var i = 0; i < tileCount; ++i) {
-    boardParts[i] = new Array(tileCount);
-    for (var j = 0; j < tileCount; ++j, c++) {
-      if (c != tileCount * tileCount)
-        boardParts[i][j] = new img2html('<h1>' + Number(i*tileCount + j + 1) + '</h1>');
-      else
-        boardParts[i][j] = new img2html();
-    }
-  }
-  emptyLoc.x = (tileCount - 1) * tileSize;//boardParts[tileCount - 1][tileCount - 1].x;
-  emptyLoc.y = (tileCount - 1) * tileSize; //boardParts[tileCount - 1][tileCount - 1].y;
-  solved = false;
-}
-
-function distance(x1, y1, x2, y2) {
-  return Math.abs(x1 - x2) + Math.abs(y1 - y2);
-}
-
-function slideTile(toLoc, fromLoc) {
+function slideTile(x, y) {
+  var toSwap, curr = boardParts[x][y], willSwap = 0;
   if (!solved) {
-    boardParts[toLoc.x][toLoc.y] = boardParts[fromLoc.x][fromLoc.y];
-    checkSolved();
+    if (boardParts[x - 1] && boardParts[x - 1][y] == 1 && ++willSwap)
+      boardParts[x - 1][y] = curr;
+    else if (boardParts[x + 1] && boardParts[x + 1][y] == 1 && ++willSwap)
+      boardParts[x + 1][y] = curr;
+    else if (boardParts[x][y - 1] == 1 && ++willSwap)
+      boardParts[x][y - 1] = curr;
+    else if (boardParts[x][y + 1] == 1 && ++willSwap)
+      boardParts[x][y + 1] = curr;
+    //boardParts[toLoc.x][toLoc.y] = boardParts[fromLoc.x][fromLoc.y];
+    //checkSolved();
+    if (willSwap) 
+      boardParts[x][y] = 1;
+    
+    drawTiles();
   }
 }
 
-function checkSolved() {
-  /*var flag = true;
-  for (var i = 0; i < tileCount; ++i) {
-    for (var j = 0; j < tileCount; ++j) {
-      if (boardParts[i][j].x != i || boardParts[i][j].y != j) {
-        flag = false;
-      }
-    }
-  }
-  solved = flag;*/
-  return false;
-}
 </script>
 </body>
 </html>
