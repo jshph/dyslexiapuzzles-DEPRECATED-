@@ -2,7 +2,7 @@
 <head>
     <title></title>
 </head>
-<body onload="drawTiles();">
+<body onload="setBoard();drawTiles()">
 <canvas width=480 height=480 id="puzzle"></canvas>
 <script type="text/javascript">
 var context = document.getElementById('puzzle').getContext('2d');
@@ -27,7 +27,7 @@ emptyLoc.y = 0;
 var solved = false;
 
 var boardParts;
-setBoard();
+//setBoard();
 
 /*document.getElementById('scale').onchange = function() {
   tileCount = this.value;
@@ -49,8 +49,8 @@ document.getElementById('puzzle').onclick = function(e) {
 };
 
 /* GENERATE HTML TO DRAW AS PARTS */
-function img2html(x,y,width,height,html) {
-    var data = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">' +
+function img2html(html) {
+    this.data = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">' +
                '<foreignObject width="100%" height="100%">' +
                '<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:40px">' +
                  html +
@@ -58,20 +58,21 @@ function img2html(x,y,width,height,html) {
                '</foreignObject>' +
                '</svg>';
 
-    var DOMURL = window.URL || window.webkitURL || window;
+    this.DOMURL = window.URL || window.webkitURL || window;
 
-    var img = new Image();
-    var svg = new Blob([data], {type: 'image/svg+xml;charset=utf-8'});
-    var url = DOMURL.createObjectURL(svg);
-
-    img.onload = function () {
-      context.drawImage(img, x, y, width, height);
-      DOMURL.revokeObjectURL(url);
-    }
-
-    img.src = url;
+    this.img = new Image();
+    this.svg = new Blob([this.data], {type: 'image/svg+xml;charset=utf-8'});
+    this.url = this.DOMURL.createObjectURL(this.svg);
 }
 
+img2html.prototype.draw = function(x,y) {
+    this.img.onload = function () {
+      context.drawImage(this.img, x, y, tileSize, tileSize);
+      this.DOMURL.revokeObjectURL(this.url);
+    }.bind(this);
+
+    this.img.src = this.url;
+}
 
 //////////
 
@@ -82,11 +83,8 @@ function drawTiles() {
   context.clearRect ( 0 , 0 , boardSize , boardSize );
   for (var i = 0; i < tileCount; ++i) {
     for (var j = 0; j < tileCount; ++j) {
-      var x = boardParts[i][j].x;
-      var y = boardParts[i][j].y;
       if(i != emptyLoc.x || j != emptyLoc.y || solved == true) {
-        img2html(x*tileSize, y*tileSize,tileSize,tileSize,
-            '<h1>' + Number(i*tileCount + j) + '</h1>');
+        boardParts[i][j].draw(i*tileSize,j*tileSize);
       }
     }
   }
@@ -95,16 +93,18 @@ function drawTiles() {
 
 function setBoard() {
   boardParts = new Array(tileCount);
+  var c = 1;
   for (var i = 0; i < tileCount; ++i) {
     boardParts[i] = new Array(tileCount);
-    for (var j = 0; j < tileCount; ++j) {
-      boardParts[i][j] = new Object;
-      boardParts[i][j].x = (tileCount - 1) - i;
-      boardParts[i][j].y = (tileCount - 1) - j;
+    for (var j = 0; j < tileCount; ++j, c++) {
+      if (c != tileCount * tileCount)
+        boardParts[i][j] = new img2html('<h1>' + Number(i*tileCount + j + 1) + '</h1>');
+      else
+        boardParts[i][j] = new img2html();
     }
   }
-  emptyLoc.x = boardParts[tileCount - 1][tileCount - 1].x;
-  emptyLoc.y = boardParts[tileCount - 1][tileCount - 1].y;
+  emptyLoc.x = (tileCount - 1) * tileSize;//boardParts[tileCount - 1][tileCount - 1].x;
+  emptyLoc.y = (tileCount - 1) * tileSize; //boardParts[tileCount - 1][tileCount - 1].y;
   solved = false;
 }
 
@@ -114,18 +114,13 @@ function distance(x1, y1, x2, y2) {
 
 function slideTile(toLoc, fromLoc) {
   if (!solved) {
-    boardParts[toLoc.x][toLoc.y].x = boardParts[fromLoc.x][fromLoc.y].x;
-    boardParts[toLoc.x][toLoc.y].y = boardParts[fromLoc.x][fromLoc.y].y;
-    boardParts[fromLoc.x][fromLoc.y].x = tileCount - 1;
-    boardParts[fromLoc.x][fromLoc.y].y = tileCount - 1;
-    toLoc.x = fromLoc.x;
-    toLoc.y = fromLoc.y;
+    boardParts[toLoc.x][toLoc.y] = boardParts[fromLoc.x][fromLoc.y];
     checkSolved();
   }
 }
 
 function checkSolved() {
-  var flag = true;
+  /*var flag = true;
   for (var i = 0; i < tileCount; ++i) {
     for (var j = 0; j < tileCount; ++j) {
       if (boardParts[i][j].x != i || boardParts[i][j].y != j) {
@@ -133,7 +128,8 @@ function checkSolved() {
       }
     }
   }
-  solved = flag;
+  solved = flag;*/
+  return false;
 }
 </script>
 </body>
