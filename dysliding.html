@@ -9,25 +9,20 @@
 <script type="text/javascript">
 
 genTiles = function(equation) {
-  var steps = [];
+  var stepsHTML = [];
   var data;
 
   $.get('solve.html', function(data) {
     getSteps(data);
   });
   function getSteps(res) {
-    steps = $(res).find('div.MathJax_Display');
-    console.log(steps);
-    for (var i = 0; i < steps.length; i++) {
-      console.log(steps[i]);
-      $('body').append(steps[i]);
+    var stepsJQ = $(res).find('div.MathJax_Display');
+    console.log(stepsJQ);
+    for (var i = 0; i < stepsJQ.length; i++) {
+      stepsHTML.push($(stepsJQ[i]).prop('outerHTML'));
     }
-
-    /*for (var i = 0; i < stepObjs.length; i++) {
-      $('body').append(stepObjs[i]);
-      /*steps.push(stepObjs[i].html());
-      console.log(stepObjs[i].html());
-    }*/
+    console.log(stepsHTML);
+    setBoard(stepsHTML);
   }
 }
 
@@ -73,7 +68,7 @@ document.getElementById('puzzle').onclick = function(e) {
 function img2html(html) {
     this.data = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">' +
                '<foreignObject width="100%" height="100%">' +
-               '<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:40px">' +
+               '<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:16px">' +
                  html +
                '</div>' +
                '</foreignObject>' +
@@ -97,14 +92,20 @@ img2html.prototype.draw = function(x,y) {
 
 //////////
 
-function setBoard() {
+function setBoard(tileAry) {
   boardParts = [];
   var c = 1;
   for (var i = 0; i < tileCount; i++) {
     boardParts.push(new Array(tileCount));
     for (var j = 0; j < tileCount; j++) {
-      if (c != tileCount * tileCount)
-        boardParts[i][j] = new img2html('<h1>' + ++c + '</h1>');
+      if (c++ != tileCount * tileCount) {
+        var tileContent = '';
+        if (typeof(tileAry[c - 1]) != 'undefined')
+          tileContent = tileAry[c - 1];
+        else
+          tileContent = 'empty'
+        boardParts[i][j] = new img2html(tileContent);
+      }
       else {
         boardParts[i][j] = 1;
       }
