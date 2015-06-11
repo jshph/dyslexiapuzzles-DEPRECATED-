@@ -10,36 +10,25 @@
 
 genTiles = function(equation) {
   var steps = [];
-  //var req = new XMLHttpRequest();
-  /*var reqScript = document.createElement('script');
-  reqScript.src = "http://www.cymath.com/answer.php?q=" + encodeURIComponent(equation) + "&callback=getSteps";
-  document.head.appendChild(reqScript);*/
-  $.ajax({
-    url: "http://www.cymath.com/answer.php?q=" + encodeURIComponent(equation),
-    dataType: 'jsonp',
-    contentType: 'text/html',
-    success: function(data) {
-      console.log(data);
-    }
-  })
+  var data;
+
+  $.get('solve.html', function(data) {
+    getSteps(data);
+  });
   function getSteps(res) {
-    console.log(String(res));
-    /*var stepObjs = $('.MathJax_Display');
-    for (var i = 0; i < stepObjs.length; i++) {
-      steps.push(stepObjs[i].html());
+    steps = $(res).find('div.MathJax_Display');
+    console.log(steps);
+    for (var i = 0; i < steps.length; i++) {
+      console.log(steps[i]);
+      $('body').append(steps[i]);
+    }
+
+    /*for (var i = 0; i < stepObjs.length; i++) {
+      $('body').append(stepObjs[i]);
+      /*steps.push(stepObjs[i].html());
       console.log(stepObjs[i].html());
     }*/
   }
-  /*req.onload = function() {
-    var stepObjs = $('.MathJax_Display');
-    for (var i = 0; i < stepObjs.length; i++) {
-      steps.push(stepObjs[i].html());
-      console.log(stepObjs[i].html());
-    }
-  }
-  req.open('get', "http://www.cymath.com/answer.php?q=" + encodeURIComponent(equation));
-  req.send();*/
-  //console.log(encodeURIComponent(equation))
 }
 
 var context = document.getElementById('puzzle').getContext('2d');
